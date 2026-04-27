@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Executivo — Sales Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --bg:          #0d1117;
+  --bg-2:        #0f1520;
+  --surface:     #131c28;
+  --surface-2:   #172030;
+  --card:        #111827;
+  --border:      rgba(125,211,252,0.07);
+  --border-md:   rgba(125,211,252,0.13);
+
+  --ice:         #7dd3fc;
+  --ice-dim:     rgba(125,211,252,0.10);
+  --ice-glow:    rgba(125,211,252,0.18);
+  --snow:        #f0f9ff;
+  --indigo:      #6366f1;
+  --indigo-dim:  rgba(99,102,241,0.12);
+  --indigo-glow: rgba(99,102,241,0.22);
+  --violet:      #818cf8;
+  --teal:        #2dd4bf;
+  --teal-dim:    rgba(45,212,191,0.10);
+  --rose:        #fb7185;
+  --rose-dim:    rgba(251,113,133,0.10);
+  --amber:       #fbbf24;
+
+  --text:        #e2eaf4;
+  --text-2:      #94a3b8;
+  --text-3:      #4b6280;
+
+  --radius-sm:   10px;
+  --radius:      16px;
+  --radius-lg:   22px;
+
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.45), 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-hover: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(125,211,252,0.12), 0 0 32px rgba(125,211,252,0.06);
+  --shadow-kpi:  0 2px 16px rgba(0,0,0,0.4);
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 0%,   rgba(99,102,241,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 80% 100%, rgba(125,211,252,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(45,212,191,0.02) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fine grain texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.page { position: relative; z-index: 1; max-width: 1380px; margin: 0 auto; padding: 0 32px 56px; }
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.anim { opacity:0; animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 36px 0 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+  gap: 20px;
+  flex-wrap: wrap;
+  animation: fadeIn 0.8s ease forwards;
+}
+
+.header-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.brand-eyebrow {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ice);
+  opacity: 0.7;
+}
+
+.brand-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  color: var(--snow);
+  line-height: 1;
+}
+
+.brand-title span {
+  font-weight: 200;
+  color: var(--text-2);
+}
+
+.brand-meta {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.brand-meta strong { color: var(--ice); font-weight: 400; }
+
+/* Segmented control — iOS style */
+.seg-ctrl {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 2px;
+  backdrop-filter: blur(12px);
+}
+.seg-btn {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 8px 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+  letter-spacing: 0.3px;
+}
+.seg-btn.active {
+  background: rgba(125,211,252,0.13);
+  color: var(--ice);
+  font-weight: 500;
+  box-shadow: 0 1px 8px rgba(125,211,252,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.seg-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.04); }
+
+/* ═══════════════════════════════════════════════
+   KPI PILLS
+═══════════════════════════════════════════════ */
+.kpi-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.kpi-pill {
+  flex: 1;
+  min-width: 160px;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 22px 18px;
+  box-shadow: var(--shadow-kpi);
+  cursor: default;
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-pill::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ice-glow), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.kpi-pill:hover::before { opacity: 1; }
+
+.kpi-pill:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.kpi-tag {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+
+.kpi-num {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--snow);
+  line-height: 1;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.kpi-delta.up   { background: var(--teal-dim); color: var(--teal); }
+.kpi-delta.down { background: var(--rose-dim); color: var(--rose); }
+.kpi-delta.flat { background: var(--ice-dim); color: var(--ice); opacity:0.7; }
+
+/* ═══════════════════════════════════════════════
+   SECTION LABEL
+═══════════════════════════════════════════════ */
+.sec-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--text-3);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sec-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-md), transparent);
+}
+
+/* ═══════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════ */
+.card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(125,211,252,0.015) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--snow);
+  letter-spacing: -0.2px;
+  margin-bottom: 4px;
+}
+.card-insight {
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--text-3);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.card-insight strong { color: var(--ice); font-weight: 400; }
+
+/* ═══════════════════════════════════════════════
+   GRID LAYOUTS
+═══════════════════════════════════════════════ */
+.row { margin-bottom: 20px; }
+
+/* Row 1: 70 / 30 */
+.grid-7-3 {
+  display: grid;
+  grid-template-columns: 1.9fr 1fr;
+  gap: 20px;
+}
+
+/* Row 2: 3 equal */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Row 3: full */
+.grid-1 { display: grid; grid-template-columns: 1fr; gap: 20px; }
+
+@media (max-width: 1100px) {
+  .grid-7-3, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════
+   GLASSMORPHISM CARD (Margem)
+═══════════════════════════════════════════════ */
+.card-glass {
+  background: linear-gradient(135deg, rgba(17,24,39,0.85) 0%, rgba(15,21,32,0.9) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
+}
+.card-glass:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.card-glass::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.card-glass::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(125,211,252,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════ */
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 300;
+}
+thead tr {
+  border-bottom: 1px solid var(--border-md);
+}
+thead th {
+  padding: 10px 16px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+
+tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  transition: background 0.15s;
+}
+tbody tr:nth-child(even) { background: rgba(125,211,252,0.022); }
+tbody tr:hover { background: rgba(125,211,252,0.045); }
+tbody tr:last-child { border-bottom: none; }
+
+td {
+  padding: 11px 16px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text);
+}
+td:first-child { text-align: left; color: var(--text-2); font-weight: 400; }
+.td-rec  { color: var(--ice); }
+.td-luc  { color: var(--teal); font-weight: 400; }
+.td-neg  { color: var(--text-2); }
+
+.mpill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 400;
+}
+.mpill-hi  { background: rgba(45,212,191,0.12); color: var(--teal); }
+.mpill-mid { background: rgba(251,191,36,0.10);  color: var(--amber); }
+.mpill-lo  { background: var(--rose-dim); color: var(--rose); }
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 0 4px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+footer p {
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--text-3);
+  letter-spacing: 0.2px;
+}
+.dot { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--ice); margin: 0 6px; vertical-align: middle; opacity: 0.5; }
+
+canvas { display: block; }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <!-- ══ HEADER ══════════════════════════════════════ -->
+  <header>
+    <div class="header-brand">
+      <span class="brand-eyebrow">Sales Intelligence</span>
+      <h1 class="brand-title">Dashboard <span>Executivo</span></h1>
+      <p class="brand-meta">
+        Período: <strong>Jun/2017 – Ago/2019</strong>
+        <span class="dot"></span>
+        203.882 transações
+        <span class="dot"></span>
+        27 meses
+      </p>
+    </div>
+    <div class="seg-ctrl">
+      <button class="seg-btn" data-m="6"  onclick="applyFilter(6)">6 meses</button>
+      <button class="seg-btn" data-m="12" onclick="applyFilter(12)">12 meses</button>
+      <button class="seg-btn active" data-m="0" onclick="applyFilter(0)">Tudo</button>
+    </div>
+  </header>
+
+  <!-- ══ KPI PILLS ══════════════════════════════════ -->
+  <div class="sec-label anim" style="animation-delay:0.05s">Indicadores</div>
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-pill anim" style="animation-delay:0.08s">
+      <div class="kpi-tag">Receita Total</div>
+      <div class="kpi-num" id="k0">—</div>
+      <span class="kpi-delta flat" id="d0">—</span>
+    </div>
+    <div class="kpi-pill anim" style="animation-delay:0.16s">
+      <div class="kpi-tag">Lucro Total</div>
+      <div class="kpi-num" id="k1">—</div>
+      <span class="kpi-delta flat" id="d1">—</span>
+    </div>
+    <div class="kpi-pill anim" style="animation-delay:0.24s">
+      <div class="kpi-tag">Margem</div>
+      <div class="kpi-num" id="k2">—</div>
+      <span class="kpi-delta flat" id="d2">—</span>
+    </div>
+    <div class="kpi-pill anim" style="animation-delay:0.32s">
+      <div class="kpi-tag">Ticket Médio</div>
+      <div class="kpi-num" id="k3">—</div>
+      <span class="kpi-delta flat" id="d3">—</span>
+    </div>
+    <div class="kpi-pill anim" style="animation-delay:0.40s">
+      <div class="kpi-tag">Total Pedidos</div>
+      <div class="kpi-num" id="k4">—</div>
+      <span class="kpi-delta flat" id="d4">—</span>
+    </div>
+    <div class="kpi-pill anim" style="animation-delay:0.48s">
+      <div class="kpi-tag">Custo Total</div>
+      <div class="kpi-num" id="k5">—</div>
+      <span class="kpi-delta flat" id="d5">—</span>
+    </div>
+  </div>
+
+  <!-- ══ ROW 1: Área Receita + Donut Categorias ═════ -->
+  <div class="sec-label anim" style="animation-delay:0.55s">Evolução & Composição</div>
+  <div class="grid-7-3 row anim" style="animation-delay:0.60s">
+    <div class="card">
+      <div class="card-title">Receita vs Lucro — Mensal</div>
+      <div class="card-insight">Pico em <strong>Nov/2017 com R$ 3,5M</strong>. Crescimento sustentado com margem acima de 53% em todo o período.</div>
+      <canvas id="cArea" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Receita por Categoria</div>
+      <div class="card-insight"><strong>Sistema de Som</strong> lidera com 34,6% da receita total consolidada.</div>
+      <canvas id="cDonut" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ ROW 2: Três barras horizontais ═════════════ -->
+  <div class="sec-label anim" style="animation-delay:0.70s">Rankings</div>
+  <div class="grid-3 row anim" style="animation-delay:0.75s">
+    <div class="card">
+      <div class="card-title">Top 10 Produtos</div>
+      <div class="card-insight"><strong>Telephoto X400</strong> representa 16,6% da receita sozinho.</div>
+      <canvas id="cProd" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 10 Países</div>
+      <div class="card-insight"><strong>EUA</strong> concentra 48% da receita global do período.</div>
+      <canvas id="cPais" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Receita por Marca</div>
+      <div class="card-insight"><strong>Contoso + Litware</strong> juntas somam 57% das vendas.</div>
+      <canvas id="cMarca" height="280"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ ROW 3: Margem glassmorphism + Regiões ══════ -->
+  <div class="sec-label anim" style="animation-delay:0.85s">Tendências & Distribuição</div>
+  <div class="grid-7-3 row anim" style="animation-delay:0.90s">
+    <div class="card-glass">
+      <div class="card-title">Evolução da Margem de Lucro (%)</div>
+      <div class="card-insight" style="color:var(--text-3)">Margem oscilou entre <strong style="color:var(--ice)">53% e 62%</strong>. Pressão gradual sobre custos a partir de 2019.</div>
+      <canvas id="cMargem" height="190"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Receita por Continente</div>
+      <div class="card-insight"><strong>América do Norte</strong> detém 51,7% do volume global.</div>
+      <canvas id="cRegiao" height="240"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ TABELA ══════════════════════════════════════ -->
+  <div class="sec-label anim" style="animation-delay:1.0s">Resumo Mensal Detalhado</div>
+  <div class="card anim" style="animation-delay:1.05s; margin-bottom:20px;">
+    <div class="card-title" style="margin-bottom:4px">Consolidado por Período</div>
+    <p class="card-insight" id="tblSub">Exibindo todos os 27 meses — Jun/2017 a Ago/2019</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mês</th>
+            <th>Pedidos</th>
+            <th>Receita</th>
+            <th>Custo</th>
+            <th>Lucro</th>
+            <th>Margem</th>
+            <th>Ticket Médio</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══════════════════════════════════════ -->
+  <footer>
+    <p>Dados fictícios para fins demonstrativos<span class="dot"></span>Sales Intelligence Dashboard</p>
+    <p>Gerado em 26/04/2025<span class="dot"></span>203.882 transações<span class="dot"></span>27 meses</p>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════ */
+const ALL = [
+  {m:"Jun/17",R:1880694.41,C:732440.27,L:1148254.14,P:8024},
+  {m:"Jul/17",R:1972510.60,C:777296.92,L:1195213.68,P:8625},
+  {m:"Ago/17",R:1928803.49,C:745040.01,L:1183763.48,P:7473},
+  {m:"Set/17",R:1722504.90,C:654363.02,L:1068141.88,P:6581},
+  {m:"Out/17",R:1988404.79,C:745275.57,L:1243129.22,P:6436},
+  {m:"Nov/17",R:3512702.00,C:1435982.16,L:2076719.84,P:13955},
+  {m:"Dez/17",R:2254777.44,C:923106.25,L:1331671.19,P:8949},
+  {m:"Jan/18",R:3197499.03,C:1281453.70,L:1916045.33,P:8292},
+  {m:"Fev/18",R:2983268.97,C:1197244.45,L:1786024.52,P:7718},
+  {m:"Mar/18",R:2686852.89,C:1083114.97,L:1603737.92,P:6988},
+  {m:"Abr/18",R:2890028.64,C:1177201.91,L:1712826.73,P:6977},
+  {m:"Mai/18",R:2761719.27,C:1146199.14,L:1615520.13,P:6796},
+  {m:"Jun/18",R:2463574.33,C:1034016.25,L:1429558.08,P:6362},
+  {m:"Jul/18",R:2529495.87,C:1057701.74,L:1471794.13,P:6840},
+  {m:"Ago/18",R:2016758.51,C:827472.78,L:1189285.73,P:5543},
+  {m:"Set/18",R:2172648.90,C:916320.51,L:1256328.39,P:5651},
+  {m:"Out/18",R:1700941.33,C:704485.75,L:996455.58,P:4819},
+  {m:"Nov/18",R:2234828.88,C:925927.48,L:1308901.40,P:5583},
+  {m:"Dez/18",R:2518971.17,C:1042497.96,L:1476473.21,P:6038},
+  {m:"Jan/19",R:1892324.79,C:878219.83,L:1014104.96,P:7442},
+  {m:"Fev/19",R:2498020.03,C:1156937.98,L:1341082.05,P:7934},
+  {m:"Mar/19",R:1924242.30,C:889805.42,L:1034436.88,P:7704},
+  {m:"Abr/19",R:3208974.15,C:1406098.94,L:1802875.21,P:10081},
+  {m:"Mai/19",R:2286519.11,C:1005313.40,L:1281205.71,P:8574},
+  {m:"Jun/19",R:2840833.40,C:1157116.00,L:1683717.40,P:8790},
+  {m:"Jul/19",R:2297120.03,C:1015765.27,L:1281354.76,P:8579},
+  {m:"Ago/19",R:1807824.01,C:798269.67,L:1009554.34,P:7128}
+];
+
+const CATS = [
+  {l:"Sistema de Som",v:22232105.30},
+  {l:"Acess. Câmeras",v:11082461.65},
+  {l:"Monitores",v:10055325.00},
+  {l:"VCD & DVD",v:5692447.00},
+  {l:"Games",v:5191931.83},
+  {l:"Laptops",v:1854235.20},
+  {l:"Caneta Gravadora",v:1681642.95},
+  {l:"Headphone BT",v:1315389.90},
+  {l:"Jogos de Tabuleiro",v:1133332.15},
+  {l:"Outros",v:1934142.27}
+];
+
+const PRODS = [
+  {l:"Telephoto Conv. Lens X400 Prata",v:10633245.00},
+  {l:"DVD M360 Preto",v:5396676.30},
+  {l:"LCD24 X300 Preto",v:1886976.00},
+  {l:"LCD24 X300 Branco",v:1651104.00},
+  {l:"LCD24W X300 Preto",v:1235718.00},
+  {l:"LCD19W M100 Branco",v:835572.00},
+  {l:"LCD19W M100 Preto",v:771669.00},
+  {l:"Som 5.1 M515 Preto",v:732303.00},
+  {l:"Som 5.1 M515 Prata",v:723768.00},
+  {l:"Som 5.1 M513 Preto",v:717249.00}
+].reverse();
+
+const PAISES = [
+  {l:"Estados Unidos",v:30783345.74},
+  {l:"Reino Unido",v:4875679.48},
+  {l:"Alemanha",v:4424226.32},
+  {l:"França",v:4388559.69},
+  {l:"Chile",v:4266473.35},
+  {l:"Brasil",v:4146403.35},
+  {l:"Canadá",v:2383458.20},
+  {l:"África do Sul",v:2099956.06},
+  {l:"Japão",v:723790.35},
+  {l:"Itália",v:719335.82}
+].reverse();
+
+const MARCAS = [
+  {l:"Contoso",v:19568945.31},
+  {l:"Litware",v:16805580.30},
+  {l:"Proseware",v:11552130.00},
+  {l:"Southridge Video",v:6614678.57},
+  {l:"Hashtag Toys",v:5749052.03},
+  {l:"Wide World Importers",v:3011779.59},
+  {l:"Northwind Traders",v:870677.46}
+].reverse();
+
+const REGIOES = [
+  {l:"América do Norte",v:33166803.94},
+  {l:"Europa",v:16632213.42},
+  {l:"América do Sul",v:8412876.69},
+  {l:"Ásia",v:3426807.44},
+  {l:"África",v:2099956.06},
+  {l:"Austrália",v:434185.71}
+];
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+const fmtBRL = v => 'R$\u00a0' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtM   = v => v >= 1e6 ? 'R$\u00a0'+(v/1e6).toFixed(2).replace('.',',')+'\u202fM'
+                              : 'R$\u00a0'+(v/1e3).toFixed(1).replace('.',',')+'\u202fK';
+const fmtN   = v => v.toLocaleString('pt-BR');
+const pct    = (a,b) => ((a-b)/b*100);
+
+Chart.defaults.font.family = "'Outfit', sans-serif";
+Chart.defaults.color = '#4b6280';
+
+const TOOLTIP = {
+  backgroundColor: 'rgba(9,14,22,0.96)',
+  borderColor: 'rgba(125,211,252,0.15)',
+  borderWidth: 1,
+  padding: 12,
+  titleFont: {size:11, weight:'500'},
+  bodyFont: {size:12, weight:'300'},
+  cornerRadius: 10,
+  displayColors: true,
+  boxWidth: 8,
+  boxHeight: 8,
+  boxPadding: 4
+};
+
+/* Palette */
+const P_ICE   = ['#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e','#164e63','#155e75','#1e3a5f'];
+const P_MULTI = ['#7dd3fc','#6366f1','#2dd4bf','#fbbf24','#fb7185','#818cf8','#34d399','#f59e0b','#a78bfa','#94a3b8'];
+const P_REG   = ['#7dd3fc','#6366f1','#2dd4bf','#fbbf24','#fb7185','#818cf8'];
+
+/* ═══════════════════════════════════════════
+   ANIMATED COUNTER
+═══════════════════════════════════════════ */
+function animCount(el, finalStr, duration = 1000) {
+  // Extract numeric value to count up to
+  const num = parseFloat(finalStr.replace(/[^\d,]/g,'').replace(',','.'));
+  if (isNaN(num)) { el.textContent = finalStr; return; }
+  const start = performance.now();
+  const isM = finalStr.includes('M');
+  const isK = finalStr.includes('K');
+  const isPct = finalStr.includes('%');
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    let v = num * ease;
+    if (isPct)      el.textContent = v.toFixed(1).replace('.',',') + '%';
+    else if (isM)   el.textContent = 'R$\u00a0' + v.toFixed(2).replace('.',',') + '\u202fM';
+    else if (isK)   el.textContent = 'R$\u00a0' + v.toFixed(1).replace('.',',') + '\u202fK';
+    else            el.textContent = fmtN(Math.round(v));
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = finalStr;
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ═══════════════════════════════════════════
+   KPI UPDATE
+═══════════════════════════════════════════ */
+function updateKPIs(data) {
+  const h = Math.floor(data.length/2);
+  const curr = data.slice(h), prev = data.slice(0,h);
+  const S = (arr,k) => arr.reduce((a,b)=>a+b[k],0);
+
+  const rT=S(data,'R'), lT=S(data,'L'), cT=S(data,'C'), pT=S(data,'P');
+  const rC=S(curr,'R'), rP=S(prev,'R');
+  const lC=S(curr,'L'), lP=S(prev,'L');
+  const cC=S(curr,'C'), cP=S(prev,'C');
+  const pdC=S(curr,'P'), pdP=S(prev,'P');
+  const mC=lC/rC*100, mP=lP/rP*100;
+  const tC=rC/pdC, tP=rP/pdP;
+
+  const vals = [fmtM(rT), fmtM(lT), (lT/rT*100).toFixed(1).replace('.',',')+'\u202f%', fmtBRL(rT/pT), fmtN(pT), fmtM(cT)];
+  const deltas = [pct(rC,rP), pct(lC,lP), mC-mP, pct(tC,tP), pct(pdC,pdP), pct(cC,cP)];
+
+  vals.forEach((v,i) => {
+    const el = document.getElementById('k'+i);
+    animCount(el, v, 900 + i*60);
+  });
+
+  deltas.forEach((d,i) => {
+    const el = document.getElementById('d'+i);
+    const up = d > 0;
+    const sym = up ? '↑' : d < 0 ? '↓' : '—';
+    const isPp = i === 2;
+    el.textContent = `${sym} ${Math.abs(d).toFixed(1).replace('.',',')}${isPp ? ' p.p.' : '%'}`;
+    // Custo going up is bad
+    const isGood = (i === 5) ? !up : up;
+    el.className = 'kpi-delta ' + (Math.abs(d) < 0.1 ? 'flat' : isGood ? 'up' : 'down');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   CHARTS STORE
+═══════════════════════════════════════════ */
+const CH = {};
+
+/* ─── AREA: Receita vs Lucro ─── */
+function buildArea(data) {
+  const ctx = document.getElementById('cArea');
+  if (CH.area) CH.area.destroy();
+
+  const gR = ctx.getContext('2d').createLinearGradient(0,0,0,300);
+  gR.addColorStop(0,'rgba(125,211,252,0.22)');
+  gR.addColorStop(1,'rgba(125,211,252,0.0)');
+
+  const gL = ctx.getContext('2d').createLinearGradient(0,0,0,300);
+  gL.addColorStop(0,'rgba(99,102,241,0.20)');
+  gL.addColorStop(1,'rgba(99,102,241,0.0)');
+
+  CH.area = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: data.map(d=>d.m),
+      datasets:[
+        {label:'Receita', data:data.map(d=>d.R), borderColor:'#7dd3fc', backgroundColor:gR, fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#7dd3fc'},
+        {label:'Lucro',   data:data.map(d=>d.L), borderColor:'#6366f1', backgroundColor:gL, fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#6366f1'}
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#4b6280',boxWidth:8,padding:16,font:{size:11,weight:'400'}}},
+        tooltip:{...TOOLTIP, callbacks:{label:c=>` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#3a5070',font:{size:10},maxRotation:45}},
+        y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#3a5070',font:{size:10},callback:v=>fmtM(v)}}
+      }
+    }
+  });
+}
+
+/* ─── DONUT: Categorias ─── */
+function buildDonut() {
+  const ctx = document.getElementById('cDonut');
+  if (CH.donut) CH.donut.destroy();
+  CH.donut = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels: CATS.map(d=>d.l),
+      datasets:[{data:CATS.map(d=>d.v), backgroundColor:P_MULTI, borderColor:'#111827', borderWidth:3, hoverOffset:8}]
+    },
+    options:{
+      cutout:'64%', responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#4b6280',boxWidth:8,padding:8,font:{size:10}}},
+        tooltip:{...TOOLTIP, callbacks:{label:c=>`  ${c.label}: ${fmtM(c.parsed)} (${(c.parsed/CATS.reduce((a,b)=>a+b.v,0)*100).toFixed(1)}%)`}}
+      }
+    }
+  });
+}
+
+/* ─── BARS horizontal (generic) ─── */
+function buildHBar(id, labels, values, palette) {
+  const ctx = document.getElementById(id);
+  if (CH[id]) CH[id].destroy();
+  CH[id] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Receita', data:values,
+        backgroundColor: palette.map(c=>c+'bb'),
+        borderColor: palette,
+        borderWidth:1,
+        borderRadius:5,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TOOLTIP, callbacks:{label:c=>` ${fmtBRL(c.parsed.x)}`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#3a5070',font:{size:10},callback:v=>fmtM(v)}},
+        y:{grid:{display:false},ticks:{color:'#6b8aaa',font:{size:10}}}
+      }
+    }
+  });
+}
+
+/* ─── DONUT: Regiões ─── */
+function buildRegiao() {
+  const ctx = document.getElementById('cRegiao');
+  if (CH.reg) CH.reg.destroy();
+  CH.reg = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels: REGIOES.map(d=>d.l),
+      datasets:[{data:REGIOES.map(d=>d.v), backgroundColor:P_REG, borderColor:'#111827', borderWidth:3, hoverOffset:8}]
+    },
+    options:{
+      cutout:'60%', responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#4b6280',boxWidth:8,padding:8,font:{size:10}}},
+        tooltip:{...TOOLTIP, callbacks:{label:c=>`  ${c.label}: ${fmtM(c.parsed)} (${(c.parsed/REGIOES.reduce((a,b)=>a+b.v,0)*100).toFixed(1)}%)`}}
+      }
+    }
+  });
+}
+
+/* ─── AREA: Margem ─── */
+function buildMargem(data) {
+  const ctx = document.getElementById('cMargem');
+  if (CH.marg) CH.marg.destroy();
+
+  const gM = ctx.getContext('2d').createLinearGradient(0,0,0,220);
+  gM.addColorStop(0,'rgba(99,102,241,0.25)');
+  gM.addColorStop(0.5,'rgba(125,211,252,0.08)');
+  gM.addColorStop(1,'rgba(125,211,252,0.0)');
+
+  CH.marg = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: data.map(d=>d.m),
+      datasets:[{
+        label:'Margem %', data:data.map(d=>+(d.L/d.R*100).toFixed(2)),
+        borderColor:'rgba(129,140,248,0.9)',
+        backgroundColor:gM,
+        fill:true, tension:0.45, borderWidth:2,
+        pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#818cf8'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TOOLTIP, callbacks:{label:c=>` Margem: ${c.parsed.y.toFixed(1).replace('.',',')}%`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.025)'},ticks:{color:'#3a5070',font:{size:10},maxRotation:45}},
+        y:{grid:{color:'rgba(255,255,255,0.025)'},ticks:{color:'#3a5070',font:{size:10},callback:v=>v+'%'},min:40,max:70}
+      }
+    }
+  });
+}
+
+/* ─── TABLE ─── */
+function buildTable(data) {
+  const tbody = document.getElementById('tblBody');
+  tbody.innerHTML = '';
+  document.getElementById('tblSub').textContent =
+    `Exibindo ${data.length} meses — ${data[0].m} a ${data[data.length-1].m}`;
+
+  const maxR = Math.max(...data.map(d=>d.R));
+  const minR = Math.min(...data.map(d=>d.R));
+
+  data.forEach(row => {
+    const m = row.L/row.R*100;
+    const mc = m >= 60 ? 'mpill-hi' : m >= 55 ? 'mpill-mid' : 'mpill-lo';
+    const rowCls = row.R===maxR ? 'style="background:rgba(45,212,191,0.04)"'
+                 : row.R===minR ? 'style="background:rgba(251,113,133,0.04)"' : '';
+    tbody.innerHTML += `
+      <tr ${rowCls}>
+        <td>${row.m}</td>
+        <td>${fmtN(row.P)}</td>
+        <td class="td-rec">${fmtBRL(row.R)}</td>
+        <td class="td-neg">${fmtBRL(row.C)}</td>
+        <td class="td-luc">${fmtBRL(row.L)}</td>
+        <td><span class="mpill ${mc}">${m.toFixed(1).replace('.',',')}%</span></td>
+        <td>${fmtBRL(row.R/row.P)}</td>
+      </tr>`;
+  });
+}
+
+/* ═══════════════════════════════════════════
+   FILTER
+═══════════════════════════════════════════ */
+let currentFilter = 0;
+
+function applyFilter(months) {
+  currentFilter = months;
+  document.querySelectorAll('.seg-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.m)===months);
+  });
+  const data = months ? ALL.slice(-months) : ALL;
+  updateKPIs(data);
+  buildArea(data);
+  buildMargem(data);
+  buildTable(data);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+(function init(){
+  applyFilter(0);
+  buildDonut();
+  buildRegiao();
+  buildHBar('cProd', PRODS.map(d=>d.l), PRODS.map(d=>d.v), P_ICE.slice().reverse());
+  buildHBar('cPais', PAISES.map(d=>d.l), PAISES.map(d=>d.v), P_ICE.slice().reverse());
+  buildHBar('cMarca', MARCAS.map(d=>d.l), MARCAS.map(d=>d.v), P_MULTI);
+})();
+</script>
+</body>
+</html>
